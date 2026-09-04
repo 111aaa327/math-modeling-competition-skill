@@ -1,0 +1,10 @@
+interface:
+  display_name: "数学建模竞赛工作流"
+  short_description: "覆盖审题、建模、实验、验证、写作、图表与合规审计的竞赛流程"
+  default_prompt: "Use $math-modeling-competition to structure and execute this modeling competition project reproducibly."
+policy:
+  allow_implicit_invocation: true
+
+
+
+

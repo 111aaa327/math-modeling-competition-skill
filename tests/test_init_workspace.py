@@ -28,11 +28,13 @@ class InitWorkspaceTests(unittest.TestCase):
                 "PLAN.md",
                 "TODO.md",
                 "HANDOFFS.md",
+                "FORMAT_LOCK.json",
                 "RESULT_REGISTRY.json",
                 "SUBMISSION_MANIFEST.csv",
             ):
                 self.assertTrue((root / name).is_file(), name)
             self.assertEqual(json.loads((root / "RESULT_REGISTRY.json").read_text(encoding="utf-8"))["results"], [])
+            self.assertEqual(json.loads((root / "FORMAT_LOCK.json").read_text(encoding="utf-8"))["status"], "UNLOCKED")
             self.assertTrue((root / "07_review").is_dir())
             self.assertTrue((root / "08_external_skill_review").is_dir())
 

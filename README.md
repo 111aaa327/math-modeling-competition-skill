@@ -9,7 +9,8 @@
 - 先建立透明基线，再按问题需要增加复杂模型。
 - 通过实验记录和结果注册表追溯论文中的关键结论。
 - 区分证据型数据图与解释型概念图。
-- 支持 Word、LaTeX、Typst 路由，以当届官方模板为最高优先级。
+- 支持 Word、LaTeX、Typst 路由，并通过 `FORMAT_LOCK.json` 锁定当届官方规则来源、文件哈希和可选 Word 模板。
+- 内置 CUMCM DOCX 格式守卫：检查 A4、2.5 cm 页边距、摘要首页、页脚居中页码、无目录、附录代码与支撑材料清单；严格模式禁止蓝色等非黑色标题。
 - 提供跨平台论文预检器，检查空稿、占位符、缺失资源、格式混写、匿名元数据和结果证据。
 - 在最终润色前使用冻结提交包进行独立盲审。
 
@@ -24,10 +25,12 @@
 │   ├── workflow.md
 │   ├── validation-and-reproducibility.md
 │   ├── writing-and-visuals.md
+│   ├── cumcm-template-lock.md
 │   └── cumcm-2026-compliance.md
 ├── scripts/
 │   ├── init_competition_workspace.py
 │   ├── build_archive_index.py
+│   ├── cumcm_format_lock.py
 │   └── paper_preflight.py
 └── tests/
 ```
@@ -69,6 +72,15 @@ python scripts/init_competition_workspace.py --path <workspace> --competition "C
 ```powershell
 python scripts/paper_preflight.py --paper <paper.docx|paper.pdf|main.tex|main.typ|paper.md> --project <workspace> --registry <RESULT_REGISTRY.json> --output <report.json>
 ```
+
+锁定 CUMCM 官方格式来源并审计 Word 论文：
+
+```powershell
+python scripts/cumcm_format_lock.py lock --workspace <workspace> --official-rules <workspace/00_rules/official/论文格式规范.pdf> --edition 2026 --style-profile classic-black
+python scripts/cumcm_format_lock.py audit --workspace <workspace> --paper <paper.docx> --strict-style --output <format-report.json>
+```
+
+2026 全国规范没有统一规定字体、字号、行距和颜色；`classic-black` 是用于贴近传统国赛论文的保守队内样式，不冒充官方排版要求。若锁定了经过验证的 Word 模板，模板样式优先。
 
 机器预检不能替代数学验证、官方规则复核或最终逐页视觉检查。
 

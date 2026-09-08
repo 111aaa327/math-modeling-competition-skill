@@ -83,6 +83,10 @@ python scripts/paper_preflight.py --paper <paper.docx|paper.pdf|main.tex|main.ty
 
 该 Skill 为独立编写。设计过程中参考并评估了 [jihe520/MathModelAgent](https://github.com/jihe520/MathModelAgent) 的公开工作流思路，但没有复制其受限论文模板、Web 服务代码或跳过权限检查的启动方式。
 
+## 配套裁判 Skill
+
+[math-modeling-judge-skill](https://github.com/111aaa327/math-modeling-judge-skill) 用于对冻结后的论文、代码、数据和结果文件进行独立盲审。建议由主 Skill 负责产出，由裁判 Skill 在隔离上下文中只读审查，再把 P0/P1/P2 问题交回主任务修改。
+
 ## License
 
 暂未指定开源许可证。公开仓库允许浏览；如需复制、修改或再分发，请先联系仓库所有者确认授权。

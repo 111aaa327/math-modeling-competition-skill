@@ -1,6 +1,6 @@
 # CUMCM 2026 compliance baseline
 
-This is a convenience checklist. Re-check the official website and local official notices before submission if they have changed.
+This is a convenience checklist derived from the organizing committee's `全国大学生数学建模竞赛论文格式规范（2026 年修订稿）`. Re-check the official website and local official notices before submission if they have changed. Record the verified source and hash in `FORMAT_LOCK.json`; see `cumcm-template-lock.md`.
 
 ## Paper
 
@@ -12,6 +12,12 @@ This is a convenience checklist. Re-check the official website and local officia
 - The electronic paper is one Word or PDF file, PDF recommended, no more than 20 MB; it excludes pledge and number pages and starts with the summary page.
 - Supporting files are a ZIP/RAR archive no more than 20 MB and are listed in the appendix.
 - Remove names, schools, instructor information, and other identity clues from the paper and supporting files.
+
+## Typography boundary
+
+- The 2026 national specification does not impose a uniform font size, font family, line spacing, or color; regional rules may add requirements.
+- Therefore a black heading system, exact Chinese fonts, heading numbering, and spacing are a locked team style unless a verified official/regional template requires them.
+- Do not describe a course template, prompt pack, or past winning paper as the official template.
 
 ## AI use
 

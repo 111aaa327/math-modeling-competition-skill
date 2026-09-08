@@ -15,7 +15,8 @@
 
 ## Typesetting route
 
-- Word: use when the official template or team workflow requires DOCX. Render to PDF and visually compare against the official template.
+- CUMCM: read `cumcm-template-lock.md`, record `FORMAT_LOCK.json`, and block final authoring until the official-rule source hash is locked. A verified Word template controls the document; otherwise use the labeled `classic-black` team profile.
+- Word: use when the official template or team workflow requires DOCX. Create the working paper from the locked template rather than a blank generic document. Render to PDF and visually compare against the template/reference.
 - LaTeX: use when the template is verified and the environment can compile it deterministically. Run enough passes to resolve cross-references and inspect the log.
 - Typst: use only after its template has been calibrated against official geometry and fonts. Scan for accidental LaTeX commands before compilation.
 - Never treat successful compilation as visual correctness. Render every final page and inspect clipping, overflow, missing glyphs, blank pages, captions, formulas, tables, page numbers, and anonymity.
@@ -26,6 +27,7 @@ Run:
 
 ```text
 python scripts/paper_preflight.py --paper <paper.docx|main.tex|main.typ|paper.md> --project <workspace> --registry <optional-result-registry.json> --output <report.json>
+python scripts/cumcm_format_lock.py audit --workspace <workspace> --paper <paper.docx> --strict-style --output <format-report.json>
 ```
 
 The preflight is deliberately conservative: it blocks missing/empty papers, placeholders, broken includes and image references, Typst/LaTeX syntax mixing, duplicate or explicitly marked unknown result IDs, and missing registry evidence. In `RESULT_REGISTRY.json`, a paper-required result should list stable `paper_checks` strings (for example the final displayed value with its unit). This checks expected claims without treating every number or ordinary notation such as `R1` as an internal result ID. The `[[R001]]` form is reserved for explicit source-stage tracing and should not remain visible in the submitted paper. The preflight warns about internal workflow terms, identity metadata, unreferenced figures, and other items that require human judgment. It does not replace mathematical validation, official-rule review, or rendered-page inspection.

@@ -167,6 +167,40 @@ class PaperPreflightTests(unittest.TestCase):
             self.assert_code(report, "unverified_result")
             self.assert_code(report, "missing_result_evidence")
 
+    def test_reasoning_quality_patterns_warn_without_failing(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            paper = root / "paper.md"
+            paper.write_text(
+                "# 问题一的模型建立与求解\n"
+                "本文采用AHP、熵权法、TOPSIS和遗传算法。"
+                "通过Python软件计算得到结果如下。\n",
+                encoding="utf-8",
+            )
+            code, report = self.run_check(root, paper)
+            self.assertEqual(code, 0)
+            codes = {item["code"] for item in report["findings"]}
+            self.assertIn("generic_heading", codes)
+            self.assertIn("software_only_result", codes)
+            self.assertIn("method_catalog_review", codes)
+
+    def test_supporting_material_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            paper = root / "paper.md"
+            paper.write_text("# 摘要\n本文完成了模型、求解与验证。", encoding="utf-8")
+            support = root / "support.zip"
+            with zipfile.ZipFile(support, "w") as archive:
+                archive.writestr("src/solve.py", "print(1)")
+            code, report = self.run_check(
+                root,
+                paper,
+                "--support-archive",
+                str(support),
+            )
+            self.assertEqual(code, 0)
+            self.assertEqual(report["status"], "PASS")
+
 
 if __name__ == "__main__":
     unittest.main()

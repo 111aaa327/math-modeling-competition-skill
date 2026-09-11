@@ -6,6 +6,8 @@ Create a one-page comparison for each candidate problem: required outputs, data 
 
 For the chosen problem, write a requirement matrix mapping every sub-question to inputs, outputs, constraints, candidate methods, validation, figures/tables, and paper sections.
 
+Before model selection, complete the operational-semantics audit, subproblem dependency graph, method-fit certificate, and assumption traceability defined in `reasoning-quality-gates.md`. The dependency graph must show which earlier definitions, indicators, states, parameters, and results are reused by later questions.
+
 Before committing to one interpretation, run an assumption-sensitivity precheck for every ambiguity that could change the feasible set, objective, data horizon, or deliverable. Record the competing interpretations, a quick discriminating calculation or logic check, the chosen interpretation, and the condition that would reverse it. Use subproblem progression as evidence: added resources or relaxed constraints should normally have a plausible marginal effect; if they do not, re-check the interpretation and implementation.
 
 ## 2. Data and evidence
@@ -19,6 +21,8 @@ Before committing to one interpretation, run an assumption-sensitivity precheck 
 ## 3. Modeling
 
 Start with a transparent baseline. For every candidate model state: objective, decision variables, assumptions, constraints, estimation procedure, computational cost, failure modes, and why it is suitable.
+
+Reject keyword-triggered model selection. A method is not justified merely because the problem says evaluation, prediction, optimization, or competition. Check the mechanism, data resolution, identifiability, validation path, and simpler alternatives.
 
 Use complexity only when it improves a relevant metric, robustness, interpretability, feasibility, or decision usefulness. Keep rejected models and reasons in the decision log.
 
@@ -48,6 +52,8 @@ Recommended artifact flow:
 | writing | paper source + citation list + result-to-claim map | no invented results; official structure retained |
 | preflight | machine-readable findings + rendered PDF/DOCX | hard failures closed; warnings adjudicated |
 | independent review | frozen manifest + hashes | reviewer sees only the submission package before benchmark comparison |
+
+Human-only or externally verified actions use `HUMAN_TASKS.md`. The receiving stage must not treat `WAITING_FOR_HUMAN` as complete merely because code, instructions, or a plausible result exists.
 
 ## 6. Writing and audit
 

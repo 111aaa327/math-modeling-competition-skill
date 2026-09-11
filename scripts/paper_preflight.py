@@ -44,6 +44,19 @@ TEX_INPUT_RE = re.compile(r"\\(?:input|include)\s*\{([^}]+)\}")
 TEX_IMAGE_RE = re.compile(r"\\includegraphics\s*(?:\[[^\]]*\])?\s*\{([^}]+)\}")
 TYPST_INCLUDE_RE = re.compile(r'#include\(\s*"([^"]+)"\s*\)')
 TYPST_IMAGE_RE = re.compile(r'image\(\s*"([^"]+)"')
+GENERIC_HEADING_RE = re.compile(
+    r"(?:问题|第)[一二三四五六七八九十0-9]+.{0,10}(?:模型建立与求解|分析与求解)"
+)
+SOFTWARE_ONLY_RESULT_RE = re.compile(
+    r"(?:利用|使用|通过).{0,24}(?:MATLAB|Matlab|Python|LINGO|Lingo|SPSS|软件|程序)"
+    r".{0,24}(?:计算|求解).{0,16}(?:得到|得出).{0,8}(?:结果如下|如下结果)",
+    re.IGNORECASE,
+)
+VALIDATION_RE = re.compile(r"验证|检验|敏感性|稳健性|误差分析|残差|收敛|不确定性")
+METHOD_NAMES = (
+    "AHP", "层次分析", "熵权", "TOPSIS", "灰色预测", "遗传算法", "神经网络",
+    "模拟退火", "粒子群", "随机森林", "支持向量机", "博弈论",
+)
 
 
 @dataclass(frozen=True)
@@ -84,6 +97,33 @@ class Audit:
             if term.lower() in lowered:
                 level = "appendix_internal_term" if appendix else "internal_term"
                 self.warn(level, f"internal workflow term appears in paper: {term}", path)
+        if not appendix:
+            generic = GENERIC_HEADING_RE.search(text)
+            if generic:
+                self.warn(
+                    "generic_heading",
+                    f"generic fill-in-the-blank heading needs review: {generic.group(0)}",
+                    path,
+                )
+            if SOFTWARE_ONLY_RESULT_RE.search(text):
+                self.warn(
+                    "software_only_result",
+                    "a result appears to be introduced only as software output; add correctness and practical interpretation",
+                    path,
+                )
+            methods = sorted({name for name in METHOD_NAMES if name.lower() in lowered})
+            if len(methods) >= 4:
+                self.warn(
+                    "method_catalog_review",
+                    f"many named methods appear ({', '.join(methods[:6])}); verify a problem-specific fit certificate for each",
+                    path,
+                )
+            if len(text) >= 1500 and not VALIDATION_RE.search(text):
+                self.warn(
+                    "missing_validation_language",
+                    "no validation, sensitivity, error, convergence, residual, robustness, or uncertainty discussion was detected",
+                    path,
+                )
 
 
 def read_text(path: Path) -> str:
@@ -218,7 +258,14 @@ def scan_docx(audit: Audit, path: Path) -> None:
                 audit.hard("invalid_docx", "DOCX has no word/document.xml", path)
                 return
             root = ElementTree.fromstring(document_xml)
-            text = "".join(node.text or "" for node in root.iter() if node.tag.endswith("}t"))
+            paragraph_texts = []
+            for paragraph in root.iter():
+                if not paragraph.tag.endswith("}p"):
+                    continue
+                paragraph_texts.append(
+                    "".join(node.text or "" for node in paragraph.iter() if node.tag.endswith("}t"))
+                )
+            text = "\n".join(paragraph_texts)
             audit.scan_text(path, text)
             if not text.strip():
                 audit.hard("empty_paper", "DOCX body contains no text", path)
@@ -336,6 +383,41 @@ def scan_figures(audit: Audit, figures_dir: Path) -> None:
                 audit.warn("unreferenced_figure", "figure asset is not referenced by the inspected source", path)
 
 
+def scan_support_archive(audit: Audit, archive_path: Path) -> None:
+    if not archive_path.is_file():
+        audit.hard("missing_support_archive", "supporting-material archive does not exist", archive_path)
+        return
+    if archive_path.stat().st_size > 20 * 1024 * 1024:
+        audit.hard("support_archive_size", "supporting-material archive exceeds 20 MB", archive_path)
+    suffix = archive_path.suffix.lower()
+    if suffix not in {".zip", ".rar"}:
+        audit.hard("support_archive_format", "supporting materials must be one ZIP or RAR archive", archive_path)
+        return
+    if suffix == ".rar":
+        audit.warn(
+            "support_archive_manual",
+            "RAR contents were not inspected; open it on a clean machine and verify files, identity, and runnable code",
+            archive_path,
+        )
+        return
+    try:
+        with zipfile.ZipFile(archive_path) as archive:
+            members = [item for item in archive.infolist() if not item.is_dir()]
+            if not members:
+                audit.hard("empty_support_archive", "supporting-material ZIP contains no files", archive_path)
+            for item in members:
+                normalized = item.filename.replace("\\", "/")
+                if normalized.startswith("/") or ".." in normalized.split("/"):
+                    audit.hard("unsafe_support_path", f"unsafe path in support archive: {item.filename}", archive_path)
+    except (OSError, zipfile.BadZipFile) as exc:
+        audit.hard("invalid_support_archive", f"cannot inspect supporting-material ZIP: {exc}", archive_path)
+    audit.warn(
+        "support_identity_manual",
+        "manually verify that archive contents and metadata contain no team, school, region, instructor, or private information",
+        archive_path,
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--paper", required=True, type=Path, help="Paper source or final PDF to inspect.")
@@ -344,6 +426,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--figures-dir", type=Path, help="Optional figure asset directory.")
     parser.add_argument("--forbidden-term", action="append", default=[], help="Project-specific identity or leak term.")
     parser.add_argument("--max-size-mb", type=float, help="Official maximum paper file size, when applicable.")
+    parser.add_argument("--support-archive", type=Path, help="Optional CUMCM ZIP/RAR supporting-material archive.")
     parser.add_argument("--output", type=Path, help="Optional JSON report path.")
     return parser
 
@@ -383,12 +466,15 @@ def main(argv: list[str] | None = None) -> int:
         scan_registry(audit, args.registry.expanduser().resolve())
     if args.figures_dir:
         scan_figures(audit, args.figures_dir.expanduser().resolve())
+    if args.support_archive:
+        scan_support_archive(audit, args.support_archive.expanduser().resolve())
     hard_count = sum(item.severity == "HARD" for item in audit.findings)
     warn_count = sum(item.severity == "WARN" for item in audit.findings)
     report = {
         "status": "FAIL" if hard_count else "PASS",
         "paper": str(paper),
         "project": str(project),
+        "support_archive": str(args.support_archive.expanduser().resolve()) if args.support_archive else None,
         "hard_failures": hard_count,
         "warnings": warn_count,
         "findings": [asdict(item) for item in audit.findings],
